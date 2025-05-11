@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"log"
 	"ms-teacher/api/constants"
-	"ms-teacher/api/services"
+	"ms-teacher/api/services/evaluations"
+	"ms-teacher/api/services/objects"
 	loconfig "ms-teacher/config"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
@@ -41,18 +42,22 @@ func main() {
 	}))
 
 	app.Get("/api/teacher/get_objects", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return services.GetObjects(c, db, rdb)
+		return objects.GetObjects(c, db, rdb)
 	})
 
 	app.Get("/api/teacher/get_evaluation/:group/:object", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return services.GetEvaluation(c, db)
+		return evaluations.GetEvaluation(c, db)
 	})
 
 	app.Post("/api/teacher/send_evaluation", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return nil
+		return evaluations.SendEvaluation(c, db)
 	})
 
 	app.Patch("/api/teacher/update_evaluation", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+		return nil
+	})
+
+	app.Delete("/api/teacher/delete_evaluation", TeacherOnly(rdb), func(c *fiber.Ctx) error {
 		return nil
 	})
 

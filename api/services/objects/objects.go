@@ -1,4 +1,4 @@
-package services
+package objects
 
 import (
 	"context"
@@ -28,11 +28,6 @@ func GetObjects(c *fiber.Ctx, db *mongo.Database, rdb *redis.Client) error {
 	sessionKey := fmt.Sprintf(constants.SessionKeyStart, session)
 	userKey, err := rdb.Get(context.Background(), sessionKey).Result()
 	if err != nil || userKey == "" {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message":  constants.ErrServerError,
-			"redirect": constants.RedirectPathLogin,
-		})
-	} else if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message":  constants.ErrServerError,
 			"redirect": constants.RedirectPathLogin,

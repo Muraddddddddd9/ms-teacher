@@ -1,4 +1,4 @@
-package services
+package evaluations
 
 import (
 	"context"
@@ -20,6 +20,11 @@ type StudentMinimal struct {
 	Patronymic string             `bson:"patronymic" json:"patronymic"`
 }
 
+type ObjectGroupMinimal struct {
+	ID     primitive.ObjectID `bson:"_id" json:"_id"`
+	Object string             `bson:"object" json:"object"`
+}
+
 func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	group := c.Params("group")
 	object := c.Params("object")
@@ -27,6 +32,50 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	if strings.TrimSpace(group) == "" || strings.TrimSpace(object) == "" {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constants.ErrGetData,
+		})
+	}
+
+	objectId, err := primitive.ObjectIDFromHex(object)
+	if err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": "Invalid object ID format",
+		})
+	}
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"_id": objectId,
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         constants.ObjectCollection,
+				"localField":   "object",
+				"foreignField": "_id",
+				"as":           "object_info",
+			},
+		},
+		{
+			"$unwind": "$object_info",
+		},
+		{
+			"$project": bson.M{
+				"_id":        0,
+				"objectName": "$object_info.object",
+			},
+		},
+	}
+
+	type Result struct {
+		ObjectName string `bson:"objectName"`
+	}
+
+	objectGroupRepo := mongodb.NewRepository[struct{}, Result](db.Collection(constants.ObjectGroupCollection))
+	objectName, err := objectGroupRepo.AggregateAll(context.Background(), pipeline)
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+			"message": "Database error",
 		})
 	}
 
@@ -46,13 +95,6 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 		})
 	}
 
-	objectId, err := primitive.ObjectIDFromHex(object)
-	if err != nil {
-		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-			"message": constants.ErrServerError,
-		})
-	}
-
 	evaluationRepo := mongodb.NewRepository[models.EvaluationModel, models.EvaluationModelWithStudent](db.Collection(constants.EvaluationCollection))
 	evaluation, err := evaluationRepo.FindAll(context.Background(), bson.M{"object": objectId})
 	if err != nil {
@@ -62,6 +104,7 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	}
 
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
+		"object":     objectName[0].ObjectName,
 		"students":   students,
 		"evaluation": evaluation,
 	})
