@@ -16,15 +16,28 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 
 	if err := c.BodyParser(&evaluationData); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Не вернный ввод данных",
+			"message": constants.ErrInvalidData,
 		})
+	}
+
+	fileds := map[string]string{
+		"value": evaluationData.Value,
+		"date":  evaluationData.Date,
+	}
+
+	for _, v := range fileds {
+		if v == "" {
+			return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+				"message": constants.ErrInvalidData,
+			})
+		}
 	}
 
 	studentRepo := mongodb.NewRepository[models.StudentsModel, struct{}](db.Collection(constants.StudentCollection))
 	_, err := studentRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Student})
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "Пользователь не найден",
+			"message": constants.ErrStudentNotFound,
 		})
 	}
 
@@ -32,7 +45,7 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	_, err = objectGroupRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Object})
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
-			"message": "Группа не найдена",
+			"message": constants.ErrObjectNotFound,
 		})
 	}
 
@@ -40,11 +53,11 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	_, err = evaluationRepo.InsertOne(context.Background(), &evaluationData)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Ошибка в добалвении оценки",
+			"message": constants.ErrSendEvaluation,
 		})
 	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "Оценка отправлена",
+		"message": constants.SuccSendEvaluation,
 	})
 }

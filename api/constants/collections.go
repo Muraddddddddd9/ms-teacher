@@ -9,4 +9,5 @@ const (
 	StatusCollection      = "statuses"
 	LogsCollection        = "logs"
 	EvaluationCollection  = "evaluations"
+	ContetstCollection    = "contests"
 )

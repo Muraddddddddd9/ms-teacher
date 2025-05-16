@@ -38,7 +38,7 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	objectId, err := primitive.ObjectIDFromHex(object)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": "Invalid object ID format",
+			"message": constants.ErrServerError,
 		})
 	}
 
@@ -75,7 +75,7 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	objectName, err := objectGroupRepo.AggregateAll(context.Background(), pipeline)
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": "Database error",
+			"message": constants.ErrObjectNameNotFound,
 		})
 	}
 
@@ -83,7 +83,7 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	groupData, err := groupRepo.FindOne(context.Background(), bson.M{"group": group})
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": constants.ErrStatusNotFound,
+			"message": constants.ErrGroupNotFound,
 		})
 	}
 

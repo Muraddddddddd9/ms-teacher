@@ -53,17 +53,17 @@ func main() {
 		return evaluations.SendEvaluation(c, db)
 	})
 
-	app.Patch("/api/teacher/update_evaluation", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return nil
+	app.Delete("/api/teacher/delete_evaluation/:id", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+		return evaluations.DeleteEvaluation(c, db)
 	})
 
-	app.Delete("/api/teacher/delete_evaluation", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return nil
+	app.Get("/api/teacher/get_my_classroom_group", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+		return evaluations.GetMyClassroomGroup(c, db, rdb)
 	})
 
-	app.Post("/api/teacher/create_contests", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return nil
+	app.Get("/api/teacher/get_my_classroom_object/:group", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+		return evaluations.GetMyClassroomObject(c, db, rdb)
 	})
 
-	app.Listen(fmt.Sprintf("localhost%v", cfg.PROJECT_PORT))
+	app.Listen(fmt.Sprintf("%v", cfg.PROJECT_PORT))
 }

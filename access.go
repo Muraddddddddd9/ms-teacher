@@ -12,8 +12,6 @@ import (
 
 func TeacherOnly(rdb *redis.Client) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		return c.Next()
-
 		session := c.Cookies(constants.SessionName)
 		if session == "" {
 			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
@@ -25,7 +23,7 @@ func TeacherOnly(rdb *redis.Client) fiber.Handler {
 		sessionKey := fmt.Sprintf(constants.SessionKeyStart, session)
 
 		userKey, err := rdb.Get(context.Background(), sessionKey).Result()
-		if err != redis.Nil || userKey == "" {
+		if err == redis.Nil || userKey == "" {
 			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 				"message":  constants.ErrEntrySystem,
 				"redirect": constants.RedirectPathProfile,
@@ -61,7 +59,7 @@ func TeacherOnly(rdb *redis.Client) fiber.Handler {
 			})
 		}
 
-		if user.Status != "учитель" {
+		if user.Status == "студент" {
 			return c.Status(301).JSON(fiber.Map{
 				"redirect": constants.RedirectPathProfile,
 			})
