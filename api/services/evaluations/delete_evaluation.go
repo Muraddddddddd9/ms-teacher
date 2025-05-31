@@ -2,7 +2,9 @@ package evaluations
 
 import (
 	"context"
+	"fmt"
 	"ms-teacher/api/constants"
+	"ms-teacher/api/services"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
 	"github.com/Muraddddddddd9/ms-database/models"
@@ -13,6 +15,7 @@ import (
 )
 
 func DeleteEvaluation(c *fiber.Ctx, db *mongo.Database) error {
+	session := c.Cookies(constants.SessionName)
 	id := c.Params("id")
 
 	if id == "" {
@@ -32,7 +35,7 @@ func DeleteEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 		"_id": evaluationID,
 	}
 	evaluationRepo := mongodb.NewRepository[models.EvaluationModel, struct{}](db.Collection(constants.EvaluationCollection))
-	_, err = evaluationRepo.FindOne(context.Background(), filter)
+	evaluationFindOne, err := evaluationRepo.FindOne(context.Background(), filter)
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constants.ErrEvaluationNotFound,
@@ -45,6 +48,25 @@ func DeleteEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 			"message": constants.ErrDeleteEvaluation,
 		})
 	}
+
+	objectGroupRepo := mongodb.NewRepository[models.ObjectsGroupsModel, struct{}](db.Collection(constants.ObjectGroupCollection))
+	objectGroupFindOne, err := objectGroupRepo.FindOne(context.Background(), bson.M{"_id": evaluationFindOne.Object})
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": constants.ErrObjectNotFound,
+		})
+	}
+
+	objectRepo := mongodb.NewRepository[models.ObjectsModel, struct{}](db.Collection(constants.ObjectCollection))
+	objectFindOne, err := objectRepo.FindOne(context.Background(), bson.M{"_id": objectGroupFindOne.Object})
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": constants.ErrObjectNotFound,
+		})
+	}
+
+	str := fmt.Sprintf("У вас удалили %v по предмету %v", evaluationFindOne.Value, objectFindOne.Object)
+	err = services.NotificationSend(evaluationFindOne.Student, str, session)
 
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
 		"message": constants.SuccDeleteEvaluation,

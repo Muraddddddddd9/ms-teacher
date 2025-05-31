@@ -2,7 +2,9 @@ package evaluations
 
 import (
 	"context"
+	"fmt"
 	"ms-teacher/api/constants"
+	"ms-teacher/api/services"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
 	"github.com/Muraddddddddd9/ms-database/models"
@@ -12,6 +14,7 @@ import (
 )
 
 func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
+	session := c.Cookies(constants.SessionName)
 	var evaluationData models.EvaluationModel
 
 	if err := c.BodyParser(&evaluationData); err != nil {
@@ -42,7 +45,7 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	}
 
 	objectGroupRepo := mongodb.NewRepository[models.ObjectsGroupsModel, struct{}](db.Collection(constants.ObjectGroupCollection))
-	_, err = objectGroupRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Object})
+	objectGroupFindOne, err := objectGroupRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Object})
 	if err != nil {
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constants.ErrObjectNotFound,
@@ -56,6 +59,17 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 			"message": constants.ErrSendEvaluation,
 		})
 	}
+
+	objectRepo := mongodb.NewRepository[models.ObjectsModel, struct{}](db.Collection(constants.ObjectCollection))
+	objectFindOne, err := objectRepo.FindOne(context.Background(), bson.M{"_id": objectGroupFindOne.Object})
+	if err != nil {
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
+			"message": constants.ErrObjectNotFound,
+		})
+	}
+
+	str := fmt.Sprintf("Вам поставили %v по предмету %v", evaluationData.Value, objectFindOne.Object)
+	err = services.NotificationSend(evaluationData.Student, str, session)
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": constants.SuccSendEvaluation,
