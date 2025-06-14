@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"ms-teacher/api/constants"
 	"ms-teacher/api/services"
+	"strconv"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
 	"github.com/Muraddddddddd9/ms-database/models"
@@ -37,8 +38,9 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	}
 
 	studentRepo := mongodb.NewRepository[models.StudentsModel, struct{}](db.Collection(constants.StudentCollection))
-	_, err := studentRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Student})
+	studentFindOne, err := studentRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Student})
 	if err != nil {
+		services.Logging(db, "/api/common/send_evaluation", c.Method(), strconv.Itoa(fiber.StatusBadRequest), evaluationData, err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constants.ErrStudentNotFound,
 		})
@@ -47,6 +49,7 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	objectGroupRepo := mongodb.NewRepository[models.ObjectsGroupsModel, struct{}](db.Collection(constants.ObjectGroupCollection))
 	objectGroupFindOne, err := objectGroupRepo.FindOne(context.Background(), bson.M{"_id": evaluationData.Object})
 	if err != nil {
+		services.Logging(db, "/api/common/send_evaluation", c.Method(), strconv.Itoa(fiber.StatusBadRequest), evaluationData, err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constants.ErrObjectNotFound,
 		})
@@ -55,6 +58,7 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	evaluationRepo := mongodb.NewRepository[models.EvaluationModel, struct{}](db.Collection(constants.EvaluationCollection))
 	_, err = evaluationRepo.InsertOne(context.Background(), &evaluationData)
 	if err != nil {
+		services.Logging(db, "/api/common/send_evaluation", c.Method(), strconv.Itoa(fiber.StatusBadRequest), evaluationData, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constants.ErrSendEvaluation,
 		})
@@ -63,13 +67,16 @@ func SendEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	objectRepo := mongodb.NewRepository[models.ObjectsModel, struct{}](db.Collection(constants.ObjectCollection))
 	objectFindOne, err := objectRepo.FindOne(context.Background(), bson.M{"_id": objectGroupFindOne.Object})
 	if err != nil {
+		services.Logging(db, "/api/common/send_evaluation", c.Method(), strconv.Itoa(fiber.StatusBadRequest), evaluationData, err)
 		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constants.ErrObjectNotFound,
 		})
 	}
 
-	str := fmt.Sprintf("Вам поставили %v по предмету %v", evaluationData.Value, objectFindOne.Object)
-	err = services.NotificationSend(evaluationData.Student, str, session)
+	if studentFindOne.Telegram != 0 {
+		str := fmt.Sprintf("Вам поставили %v по предмету %v", evaluationData.Value, objectFindOne.Object)
+		err = services.NotificationSend(evaluationData.Student, str, session)
+	}
 
 	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
 		"message": constants.SuccSendEvaluation,

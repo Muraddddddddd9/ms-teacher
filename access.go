@@ -10,22 +10,15 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func TeacherOnly(rdb *redis.Client) fiber.Handler {
+func Access(rdb *redis.Client, arrAccessStatus []string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		session := c.Cookies(constants.SessionName)
-		if session == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"message":  constants.ErrEntrySystem,
-				"redirect": constants.RedirectPathProfile,
-			})
-		}
-
+		session := c.Cookies("session")
 		sessionKey := fmt.Sprintf(constants.SessionKeyStart, session)
 
 		userKey, err := rdb.Get(context.Background(), sessionKey).Result()
 		if err == redis.Nil || userKey == "" {
-			return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-				"message":  constants.ErrEntrySystem,
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"message":  constants.ErrSessionNotFound,
 				"redirect": constants.RedirectPathProfile,
 			})
 		} else if err != nil {
@@ -59,10 +52,16 @@ func TeacherOnly(rdb *redis.Client) fiber.Handler {
 			})
 		}
 
-		if user.Status == "студент" {
-			return c.Status(301).JSON(fiber.Map{
-				"redirect": constants.RedirectPathProfile,
-			})
+		for i, access := range arrAccessStatus {
+			if user.Status == access {
+				break
+			} else {
+				if i == len(arrAccessStatus) {
+					return c.Status(301).JSON(fiber.Map{
+						"redirect": constants.RedirectPathProfile,
+					})
+				}
+			}
 		}
 
 		return c.Next()

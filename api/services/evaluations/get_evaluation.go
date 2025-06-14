@@ -3,6 +3,8 @@ package evaluations
 import (
 	"context"
 	"ms-teacher/api/constants"
+	"ms-teacher/api/services"
+	"strconv"
 	"strings"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
@@ -67,6 +69,12 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 		},
 	}
 
+	type GroupObjectData struct {
+		Group  string `bson:"group"`
+		Object string `bson:"object"`
+	}
+	groupObjectData := GroupObjectData{Group: group, Object: object}
+
 	type Result struct {
 		ObjectName string `bson:"objectName"`
 	}
@@ -74,7 +82,8 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	objectGroupRepo := mongodb.NewRepository[struct{}, Result](db.Collection(constants.ObjectGroupCollection))
 	objectName, err := objectGroupRepo.AggregateAll(context.Background(), pipeline)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		services.Logging(db, "/api/common/get_evaluation", c.Method(), strconv.Itoa(fiber.StatusConflict), groupObjectData, err)
+		return c.Status(fiber.StatusConflict).JSON(fiber.Map{
 			"message": constants.ErrObjectNameNotFound,
 		})
 	}
@@ -82,6 +91,7 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	groupRepo := mongodb.NewRepository[models.GroupsModel, struct{}](db.Collection(constants.GroupCollection))
 	groupData, err := groupRepo.FindOne(context.Background(), bson.M{"group": group})
 	if err != nil {
+		services.Logging(db, "/api/common/get_evaluation", c.Method(), strconv.Itoa(fiber.StatusBadRequest), groupObjectData, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constants.ErrGroupNotFound,
 		})
@@ -90,6 +100,7 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	studentRepo := mongodb.NewRepository[StudentMinimal, struct{}](db.Collection(constants.StudentCollection))
 	students, err := studentRepo.FindAll(context.Background(), bson.M{"group": groupData.ID})
 	if err != nil {
+		services.Logging(db, "/api/common/get_evaluation", c.Method(), strconv.Itoa(fiber.StatusBadRequest), groupObjectData, err)
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": constants.ErrStudentNotFound,
 		})
@@ -98,7 +109,8 @@ func GetEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	evaluationRepo := mongodb.NewRepository[models.EvaluationModel, models.EvaluationModelWithStudent](db.Collection(constants.EvaluationCollection))
 	evaluation, err := evaluationRepo.FindAll(context.Background(), bson.M{"object": objectId})
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
+		services.Logging(db, "/api/common/get_evaluation", c.Method(), strconv.Itoa(fiber.StatusNotFound), groupObjectData, err)
+		return c.Status(fiber.StatusNotFound).JSON(fiber.Map{
 			"message": constants.ErrServerError,
 		})
 	}

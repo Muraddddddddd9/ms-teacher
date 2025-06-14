@@ -7,8 +7,8 @@ const (
 	ErrUserNotFound = "Пользователь не найден"
 	ErrInvalidData  = "Данные введены не верно"
 	ErrGetData      = "Ошибка в получении данных"
+	ErrDataLogging   = "Ошибка в логировании данных"
 
-	ErrStatusNotFound     = "Статус не найден"
 	ErrGroupNotFound      = "Группа не найдена"
 	ErrEvaluationNotFound = "Оценка не найдена"
 	ErrStudentNotFound    = "Студент не найден"

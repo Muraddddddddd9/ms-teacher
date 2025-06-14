@@ -26,7 +26,7 @@ func NotificationSend(id primitive.ObjectID, str string, session string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", "http://192.168.0.18:8084/api/telegram/notification", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("POST", "http://192.168.0.62:8084/api/telegram/notification", bytes.NewBuffer(jsonData))
 	if err != nil {
 		fmt.Println("Ошибка при создании запроса:", err)
 		return err

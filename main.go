@@ -6,7 +6,6 @@ import (
 	"log"
 	"ms-teacher/api/constants"
 	"ms-teacher/api/services/evaluations"
-	"ms-teacher/api/services/objects"
 	loconfig "ms-teacher/config"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
@@ -37,31 +36,27 @@ func main() {
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.ORIGIN_URL,
 		AllowHeaders:     "Origin, Content-Type, Accept",
-		AllowMethods:     "GET, POST, PATCH, DELETE",
+		AllowMethods:     "GET, POST, DELETE",
 		AllowCredentials: true,
 	}))
 
-	app.Get("/api/teacher/get_objects", TeacherOnly(rdb), func(c *fiber.Ctx) error {
-		return objects.GetObjects(c, db, rdb)
-	})
-
-	app.Get("/api/teacher/get_evaluation/:group/:object", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+	app.Get("/api/teacher/get_evaluation/:group/:object", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
 		return evaluations.GetEvaluation(c, db)
 	})
 
-	app.Post("/api/teacher/send_evaluation", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+	app.Post("/api/teacher/send_evaluation", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
 		return evaluations.SendEvaluation(c, db)
 	})
 
-	app.Delete("/api/teacher/delete_evaluation/:id", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+	app.Delete("/api/teacher/delete_evaluation/:id", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
 		return evaluations.DeleteEvaluation(c, db)
 	})
 
-	app.Get("/api/teacher/get_my_classroom_group", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+	app.Get("/api/teacher/get_my_classroom_group", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
 		return evaluations.GetMyClassroomGroup(c, db, rdb)
 	})
 
-	app.Get("/api/teacher/get_my_classroom_object/:group", TeacherOnly(rdb), func(c *fiber.Ctx) error {
+	app.Get("/api/teacher/get_my_classroom_object/:group", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
 		return evaluations.GetMyClassroomObject(c, db, rdb)
 	})
 
