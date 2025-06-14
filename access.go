@@ -12,7 +12,7 @@ import (
 
 func Access(rdb *redis.Client, arrAccessStatus []string) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		session := c.Cookies("session")
+		session := c.Cookies(constants.SessionName)
 		sessionKey := fmt.Sprintf(constants.SessionKeyStart, session)
 
 		userKey, err := rdb.Get(context.Background(), sessionKey).Result()

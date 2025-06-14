@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"ms-teacher/api/constants"
 	"net/http"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -36,7 +37,7 @@ func NotificationSend(id primitive.ObjectID, str string, session string) error {
 
 	if session != "" {
 		cookie := &http.Cookie{
-			Name:  "session",
+			Name:  constants.SessionName,
 			Value: session,
 		}
 		req.AddCookie(cookie)
