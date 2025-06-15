@@ -1,6 +1,7 @@
 package constants
 
 const (
+	TeacherCollection     = "teachers"
 	StudentCollection     = "students"
 	ObjectCollection      = "objects"
 	GroupCollection       = "groups"

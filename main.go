@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"ms-teacher/api/constants"
+	"ms-teacher/api/services"
 	"ms-teacher/api/services/evaluations"
 	loconfig "ms-teacher/config"
 
@@ -58,6 +59,10 @@ func main() {
 
 	app.Get("/api/teacher/get_my_classroom_object/:group", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
 		return evaluations.GetMyClassroomObject(c, db, rdb)
+	})
+
+	app.Post("/api/teacher/message_contest", Access(rdb, []string{constants.AdminStatus, constants.RestrictedAdminStatus, constants.TeacherStatus}), func(c *fiber.Ctx) error {
+		return services.MessageContest(c, db)
 	})
 
 	app.Listen(fmt.Sprintf("%v", cfg.PROJECT_PORT))

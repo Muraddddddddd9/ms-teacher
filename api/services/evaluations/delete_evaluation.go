@@ -3,9 +3,11 @@ package evaluations
 import (
 	"context"
 	"fmt"
+	"log"
 	"ms-teacher/api/constants"
 	"ms-teacher/api/services"
 	"strconv"
+	"strings"
 
 	"github.com/Muraddddddddd9/ms-database/data/mongodb"
 	"github.com/Muraddddddddd9/ms-database/models"
@@ -86,8 +88,11 @@ func DeleteEvaluation(c *fiber.Ctx, db *mongo.Database) error {
 	}
 
 	if studentFindOne.Telegram != 0 {
-		str := fmt.Sprintf("У вас удалили %v по предмету %v", evaluationFindOne.Value, objectFindOne.Object)
+		str := fmt.Sprintf("Вам удалили '%v' по предмету '%v' за %v", evaluationFindOne.Value, strings.ToUpper(objectFindOne.Object), evaluationFindOne.Date)
 		err = services.NotificationSend(evaluationFindOne.Student, str, session)
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return c.Status(fiber.StatusAccepted).JSON(fiber.Map{
